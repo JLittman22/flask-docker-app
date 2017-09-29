@@ -1,12 +1,12 @@
 FROM nginx:alpine
 
-RUN rm /etc/nginx/conf.d/*
-
 RUN apk add --update \
     python \
     python-dev \
     py-pip \
     build-base
+
+RUN rm /etc/nginx/conf.d/*
 
 COPY default.conf /etc/nginx/conf.d/
 
