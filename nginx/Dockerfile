@@ -15,7 +15,9 @@ COPY . /app
 # COPY ../application/requirements.txt /app
 WORKDIR /app
 
-EXPOSE 8080
+EXPOSE 8081
+
+CMD ["nginx", "-g", "daemon off;"]
 
 # RUN pip install -r requirements.txt
 # ENTRYPOINT ["python"]
