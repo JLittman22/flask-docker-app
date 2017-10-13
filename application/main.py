@@ -19,9 +19,16 @@ DB_HOST = 'postgresql'
 conn = psycopg2.connect("dbname='{0}' user='{1}' password='{2}' host='{3}'".format(DB_NAME, DB_USER, DB_PASS, DB_HOST))
 cur = conn.cursor()
 
+def commit():
+    try:
+        conn.commit()
+    except BaseException:
+        conn.rollback()
+
 def create_table(tablename):
     try:
         cur.execute("CREATE TABLE IF NOT EXISTS {0}(ID INT PRIMARY KEY NOT NULL)".format(tablename))
+        commit()
     except psycopg2.OperationalError as e:
         logging.error('Unable to connect!\n{0}').format(e)
         pass
@@ -34,7 +41,8 @@ def add_user(tablename):
         flash('Login requested for OpenID="%s"' % (form.userid.data))
         try:
             cur.execute("INSERT INTO {0} VALUES {1}".format(tablename, form.userid.data))
-            return redirect('/tables')
+            commit()
+            return redirect('/<string:{0}>/request'.format(tablename))
         except:
             logging.error('Unable to insert data into {0}'.format(tablename))
     return render_template('user.html', title='Add User', form=form)
@@ -44,14 +52,18 @@ def retrieve_user(tablename):
     create_table(tablename)
     try:
         cur.execute("SELECT * FROM {0}".format(tablename))
-        return "Data retrieved from {0}".format(tablename)
-    except pyscopg2.OperationalError as e:
+        for record in cur:
+            res = res + ", " + str(record)
+        return res + "Data retrieved from {0}".format(tablename)
+    except psycopg2.OperationalError as e:
         logging.error('Unable to retreive data from {0}'.format(tablename))
         pass
 
 @app.route("/<string:tablename>")
 def hello_world(tablename):
+    conn = psycopg2.connect("dbname='{0}' user='{1}' password='{2}' host='{3}'".format(DB_NAME, DB_USER, DB_PASS, DB_HOST))
     create_table(tablename)
+    conn.close()
     return "Created table: {0}".format(tablename)
 
 # @app.route("/<string:tablename>/request", methods = ['GET','POST'])
@@ -61,28 +73,30 @@ def hello_world(tablename):
 #         try:
 #             cur.execute("SELECT * FROM {0}".format(tablename))
 #             return "Data retrieved from {0}".format(tablename)
-#         except pyscopg2.OperationalError as e:
+#         except psycopg2.OperationalError as e:
 #             logging.error('Unable to retreive data from {0}'.format(tablename))
 #             pass
 #     if request.method == 'POST':
 #         try:
 #             cur.execute("INSERT INTO {0} VALUES (3);".format(tablename))
 #             return "Inserted data into {0}".format(tablename)
-#         except pyscopg2.OperationalError as e:
+#         except psycopg2.OperationalError as e:
 #             logging.error('Unable to insert data into {0}'.format(tablename))
 #             pass
 
 
 @app.route("/tables")
 def tables_print():
+    conn = psycopg2.connect("dbname='{0}' user='{1}' password='{2}' host='{3}'".format(DB_NAME, DB_USER, DB_PASS, DB_HOST))
     try:
-        cur.execute("SELECT * FROM pg_catalog.pg_tables");
+        cur.execute("SELECT * FROM pg_catalog.pg_tables")
     except psycopg2.OperationalError as e:
         logging.error('Unable to connect!\n{0}').format(e)
         pass
     res = ""
     for record in cur:
         res = res + ", " + str(record)
+    conn.close()
     return res
 
 if __name__ == "__main__":
