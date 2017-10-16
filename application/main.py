@@ -33,7 +33,7 @@ def add_user(tablename):
     create_table(tablename)
     form = UserForm()
     if form.validate_on_submit:
-        flash('Login requested for OpenID="%s"' % (form.userid.data))
+        flash('Login requested for OpenID={0}'.format((form.userid.data)))
         try:
             cur.execute("INSERT INTO {0} (ID) VALUES ({1});".format(tablename, str(form.userid.data)))
             return redirect('/{0}/request'.format(tablename))
@@ -48,8 +48,8 @@ def retrieve_user(tablename):
         cur.execute("SELECT * FROM {0}".format(tablename))
         res = ""
         for record in cur.fetchall():
-            res = res + ", " + str(record)
-        return res + "Data retrieved from {0}".format(tablename)
+            res = res + "\n" + str(record)
+        return res + "\n" + "User IDs successfully retrieved from {0}".format(tablename)
     except psycopg2.OperationalError as e:
         logging.error('Unable to retreive data from {0}'.format(tablename))
         pass
